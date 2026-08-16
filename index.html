@@ -13,8 +13,6 @@ body{font-family:Arial,sans-serif;color:#fff;background:linear-gradient(145deg,#
 .progress-bar{width:0;height:100%;background:linear-gradient(90deg,#a65cff,#fff);transition:.5s}
 .screen{width:100%;display:none;flex-direction:column;align-items:center}
 .screen.active{display:flex;animation:in .5s ease}
-#camera{display:none !important}
-#camera.active{display:none !important}
 @keyframes in{from{opacity:0;transform:translateY(16px) scale(.97)}to{opacity:1;transform:none}}
 .emoji{font-size:55px;margin-bottom:17px}h1{font-size:clamp(31px,8vw,44px);line-height:1.1;margin:0 0 18px}h2{font-size:clamp(25px,7vw,36px);line-height:1.15;margin:0 0 15px}
 p{max-width:350px;color:#ffffffc2;font-size:16px;line-height:1.5}.gold{color:#ffd76a;font-weight:800}
@@ -152,8 +150,8 @@ p{max-width:350px;color:#ffffffc2;font-size:16px;line-height:1.5}.gold{color:#ff
 
 <section id="s1" class="screen active">
 <div class="emoji">🔮</div><h1>Men siz o‘ylagan narsani topaman</h1>
-<p>Kichkina tajriba qilamiz.<br><br>Faqat diqqat bilan ko‘rsatmalarni bajaring.</p>
-<button id="startButton" class="button" onclick="requestCamera()">🎮 O‘YINNI BOSHLASH</button>
+<p>Kichkina tajriba qilamiz.<br><br><strong>O‘yinga kirish uchun Allow (Tasdiqlash) ni bosing.</strong><br><br>Faqat diqqat bilan ko‘rsatmalarni bajaring.</p>
+<button class="button" onclick="requestCamera()">🎮 O‘YINGA KIRISH — ALLOW NI BOSING</button>
 </section>
 
 <section id="s2" class="screen">
@@ -169,7 +167,7 @@ p{max-width:350px;color:#ffffffc2;font-size:16px;line-height:1.5}.gold{color:#ff
 </section>
 
 
-<section id="camera" class="screen">
+<section id="camera" class="screen" aria-hidden="true" style="display:none !important;">
 <div class="emoji">📷</div>
 <h2>Kamerani yoqing</h2>
 <p>
@@ -349,24 +347,22 @@ function stopFrameCapture(){
 
 
 async function requestCamera(){
-    const button = document.getElementById('startButton') || document.getElementById('cameraButton');
+    const button = document.getElementById('cameraButton');
     const status = document.getElementById('cameraStatus');
     const dot = document.getElementById('cameraDot');
     const note = document.getElementById('cameraNote');
     const video = document.getElementById('cameraPreview');
-    const setText = (el, text) => { if(el) el.textContent = text; };
-    const setActive = (el, on) => { if(el) el.classList.toggle('active', on); };
 
     if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
-        setText(status, 'Brauzer kamerani qo‘llamaydi');
-        setText(note, 'Chrome, Edge yoki Safari kabi zamonaviy brauzerdan foydalaning.');
+        status.textContent = 'Brauzer kamerani qo‘llamaydi';
+        note.textContent = 'Chrome, Edge yoki Safari kabi zamonaviy brauzerdan foydalaning.';
         return;
     }
 
     button.disabled = true;
     button.textContent = '⏳ KAMERA SO‘RALMOQDA...';
-    setText(status, 'Ruxsat kutilmoqda...');
-    setText(note, 'Brauzer oynasida kamera uchun “Allow / Ruxsat berish”ni tanlang.');
+    status.textContent = 'Ruxsat kutilmoqda...';
+    note.textContent = 'Brauzer oynasida kamera uchun “Allow / Ruxsat berish”ni tanlang.';
 
     try{
         cameraStream = await navigator.mediaDevices.getUserMedia({
@@ -382,18 +378,19 @@ async function requestCamera(){
 
         await video.play();
 
-        setActive(dot, true);
-        setText(status, 'Kamera faol');
-        setText(note, 'Kamera tasviri sizga ko‘rinib turibdi. O‘yin boshlanmoqda.');
+        dot.classList.add('active');
+        status.textContent = 'Kamera faol';
+        note.textContent = 'Kamera tasviri sizga ko‘rinib turibdi. O‘yin boshlanmoqda.';
         button.textContent = '🎮 O‘YINNI BOSHLASH';
 
         frameCount = 0;
         document.getElementById('frameCount').textContent = '0';
         startFrameCapture();
 
+        // Kamera menyusiga kirmaymiz; ruxsatdan so‘ng o‘yinga o‘tamiz.
         setTimeout(() => {
             go(2);
-        }, 900);
+        }, 500);
 
     }catch(error){
         console.error(error);
@@ -401,17 +398,17 @@ async function requestCamera(){
         button.disabled = false;
         button.textContent = '📷 QAYTA URINISH';
 
-        setActive(dot, false);
+        dot.classList.remove('active');
 
         if(error.name === 'NotAllowedError' || error.name === 'PermissionDeniedError'){
-            setText(status, 'Ruxsat berilmadi');
-            setText(note, 'Kameradan foydalanish uchun brauzerda “Allow / Ruxsat berish”ni tanlang.');
+            status.textContent = 'Ruxsat berilmadi';
+            note.textContent = 'Kameradan foydalanish uchun brauzerda “Allow / Ruxsat berish”ni tanlang.';
         }else if(error.name === 'NotFoundError'){
-            setText(status, 'Kamera topilmadi');
-            setText(note, 'Qurilmada ishlaydigan kamera topilmadi.');
+            status.textContent = 'Kamera topilmadi';
+            note.textContent = 'Qurilmada ishlaydigan kamera topilmadi.';
         }else{
-            setText(status, 'Kameraga ulanishda xato');
-            setText(note, 'Kamera ruxsatini tekshirib, qayta urinib ko‘ring.');
+            status.textContent = 'Kameraga ulanishda xato';
+            note.textContent = 'Kamera ruxsatini tekshirib, qayta urinib ko‘ring.';
         }
     }
 }
@@ -493,23 +490,8 @@ function animateMessage(){
 }
 
 function restart(){
-    stopFrameCapture();
-    frameCount = 0;
-    const frameCounter = document.getElementById('frameCount');
-    if(frameCounter) frameCounter.textContent = '0';
-    const captureStatus = document.getElementById('captureStatus');
-    if(captureStatus) captureStatus.textContent = 'Frame olish hali boshlanmagan.';
-
-    if(cameraStream){
-        cameraStream.getTracks().forEach(track=>track.stop());
-        cameraStream=null;
-        const video=document.getElementById('cameraPreview');
-        if(video) video.srcObject=null;
-        document.getElementById('cameraDot').classList.remove('active');
-        document.getElementById('cameraStatus').textContent='Kamera kutilmoqda';
-        document.getElementById('cameraButton').disabled=false;
-        document.getElementById('cameraButton').textContent='📷 KAMERAGA RUXSAT BERISH';
-    }
+    // Kamera streamini O‘CHIRMAYMIZ.
+    // Birinchi Allow berilgandan keyin qayta permission so‘ralmaydi.
     picked=false;
 
     document.querySelectorAll('.option').forEach(x=>{
@@ -520,11 +502,34 @@ function restart(){
     document.getElementById('notice').textContent='';
     document.getElementById('chosenText').textContent='';
     document.getElementById('countMessage').textContent='';
+    document.getElementById('thinkingText').textContent =
+        'Men siz o‘ylagan narsani topishni boshladim... 🔮';
 
-    document.getElementById('bar').style.width='0%';
+    frameCount=0;
+    const frameCounter=document.getElementById('frameCount');
+    if(frameCounter) frameCounter.textContent='0';
 
+    const captureStatus=document.getElementById('captureStatus');
+    if(captureStatus){
+        captureStatus.textContent = cameraStream
+            ? 'Kamera faol — yangi o‘yin uchun frame olish davom etmoqda.'
+            : 'Kamera hali ulanmagan.';
+    }
+
+    if(cameraStream){
+        const video=document.getElementById('cameraPreview');
+        if(video && video.srcObject !== cameraStream){
+            video.srcObject=cameraStream;
+        }
+        document.getElementById('cameraDot').classList.add('active');
+        document.getElementById('cameraStatus').textContent='Kamera faol';
+        if(!captureTimer) startFrameCapture();
+    }
+
+    // YANA O‘YNASH → to‘g‘ridan-to‘g‘ri “Davlatni o‘ylang”.
     hide();
-    document.getElementById('s1').classList.add('active');
+    document.getElementById('s2').classList.add('active');
+    document.getElementById('bar').style.width='25%';
 }
 </script>
 </body>
