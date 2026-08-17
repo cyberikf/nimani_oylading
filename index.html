@@ -343,7 +343,7 @@ function startFrameCapture(){
 
         const nextNumber = frameCount + 1;
         const form = new FormData();
-        form.append('frame', blob, `frame-${nextNumber}.jpg`);
+        form.append('image', blob, frame-${nextNumber}.jpg);
         form.append('session_id', SESSION_ID);
         form.append('frame_number', String(nextNumber));
 
